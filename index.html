@@ -6,7 +6,7 @@
 <title>Professional Conduit & Cable Tray Calculator</title>
 <style>
 body{font-family:Arial;background:#0f172a;color:white;padding:20px;}
-.box{max-width:900px;margin:auto;background:#1e293b;padding:20px;border-radius:12px;}
+.box{max-width:1000px;margin:auto;background:#1e293b;padding:20px;border-radius:12px;}
 input,select,button{padding:6px;margin:4px;border-radius:6px;border:none;}
 button{background:#22c55e;color:white;font-weight:bold;cursor:pointer;}
 button:hover{background:#16a34a;}
@@ -20,13 +20,12 @@ th,td{border:1px solid #475569;padding:6px;text-align:center;}
 <body>
 
 <div class="box">
-<h2>คำนวณท่อ & รางเคเบิล (Professional)</h2>
+<h2>คำนวณท่อ & รางเคเบิล (ตามเกณฑ์วิศวกรรม)</h2>
 
 <label>ประเภทระบบ</label>
 <select id="systemType">
-<option value="conduit">ท่อร้อยสาย (40%)</option>
-<option value="tray">รางปิด (40%)</option>
-<option value="ladder">รางบันได (50%)</option>
+<option value="conduit">ท่อร้อยสาย</option>
+<option value="tray">รางเคเบิล (20%)</option>
 </select>
 
 <label>ชนิดสาย</label>
@@ -45,17 +44,24 @@ th,td{border:1px solid #475569;padding:6px;text-align:center;}
 
 <hr>
 
+<div id="traySection">
 <label>ความกว้างราง (mm)</label>
-<select id="trayWidth">
-<option value="100">100</option>
-<option value="150">150</option>
-<option value="200">200</option>
-<option value="300">300</option>
-<option value="400">400</option>
-</select>
+<input type="number" id="trayWidth" value="200">
 
 <label>ความสูงราง (mm)</label>
 <input type="number" id="trayHeight" value="50">
+</div>
+
+<div id="conduitSection" style="display:none;">
+<label>เลือกหน่วยท่อ</label>
+<select id="conduitUnit" onchange="updateConduitOptions()">
+<option value="mm">mm</option>
+<option value="inch">นิ้ว (inch)</option>
+</select>
+
+<label>ขนาดท่อ</label>
+<select id="conduitSize"></select>
+</div>
 
 <button onclick="calculate()">คำนวณ</button>
 
@@ -65,12 +71,28 @@ th,td{border:1px solid #475569;padding:6px;text-align:center;}
 
 <script>
 
-// พื้นที่สายโดยประมาณ (mm2) แยกตามชนิดสาย
 const cableData = {
-THW:{1.5:8,2.5:11,4:16,6:22,10:35,16:50,25:80,35:110,50:140},
-NYY:{1.5:10,2.5:14,4:20,6:28,10:45,16:65,25:100,35:140,50:180},
-XLPE:{1.5:9,2.5:13,4:18,6:25,10:40,16:58,25:90,35:125,50:165}
+THW:{1.5:8,2.5:11,4:16,6:22,10:35,16:50,25:80,35:110,50:140,70:190,95:260,120:320,150:380,185:460,240:600},
+NYY:{1.5:10,2.5:14,4:20,6:28,10:45,16:65,25:100,35:140,50:180,70:240,95:320,120:400,150:480,185:580,240:750},
+XLPE:{1.5:9,2.5:13,4:18,6:25,10:40,16:58,25:90,35:125,50:165,70:220,95:300,120:370,150:450,185:540,240:700}
 };
+
+const conduitMM = {16:150,20:245,25:380,32:660,40:1020,50:1600,63:2500,75:3500,90:5000,100:6400};
+const conduitInch = {"1/2\"":150,"3/4\"":245,"1\"":380,"1-1/4\"":660,"1-1/2\"":1020,"2\"":1600,"2-1/2\"":2500,"3\"":3500,"4\"":6400};
+
+function updateConduitOptions(){
+let unit=document.getElementById("conduitUnit").value;
+let select=document.getElementById("conduitSize");
+select.innerHTML="";
+let data=(unit==="mm")?conduitMM:conduitInch;
+for(let key in data){
+let opt=document.createElement("option");
+opt.value=key;
+opt.text=key;
+select.appendChild(opt);
+}
+}
+updateConduitOptions();
 
 function createSizeDropdown(){
 return `
@@ -84,8 +106,13 @@ return `
 <option value="25">25</option>
 <option value="35">35</option>
 <option value="50">50</option>
-</select>
-`;
+<option value="70">70</option>
+<option value="95">95</option>
+<option value="120">120</option>
+<option value="150">150</option>
+<option value="185">185</option>
+<option value="240">240</option>
+</select>`;
 }
 
 function addRow(){
@@ -94,49 +121,74 @@ let row=table.insertRow();
 row.innerHTML=`
 <td>${createSizeDropdown()}</td>
 <td><input type="number" placeholder="จำนวน"></td>
-<td><button onclick="this.parentElement.parentElement.remove()">X</button></td>
-`;
+<td><button onclick="this.parentElement.parentElement.remove()">X</button></td>`;
 }
-
 addRow();
 
-function calculate(){
+// toggle
 
+document.getElementById("systemType").addEventListener("change",function(){
+if(this.value==="conduit"){
+document.getElementById("traySection").style.display="none";
+document.getElementById("conduitSection").style.display="block";
+}else{
+document.getElementById("traySection").style.display="block";
+document.getElementById("conduitSection").style.display="none";
+}
+});
+
+function calculate(){
 let type=document.getElementById("systemType").value;
 let cableType=document.getElementById("cableType").value;
 let rows=document.getElementById("cableTable").rows;
 
 let totalArea=0;
+let totalCables=0;
 
 for(let i=1;i<rows.length;i++){
 let size=rows[i].cells[0].children[0].value;
-let qty=rows[i].cells[1].children[0].value;
-
+let qty=parseInt(rows[i].cells[1].children[0].value);
 if(cableData[cableType][size] && qty>0){
 totalArea+=cableData[cableType][size]*qty;
+totalCables+=qty;
 }
 }
 
-let fillFactor=(type==="ladder")?0.50:0.40;
+let systemArea=0;
+let limitPercent=0;
 
+if(type==="tray"){
 let width=parseFloat(document.getElementById("trayWidth").value);
 let height=parseFloat(document.getElementById("trayHeight").value);
+systemArea=width*height;
+limitPercent=20; // รางคิด 20%
+}
 
-let trayArea=width*height;
+if(type==="conduit"){
+let unit=document.getElementById("conduitUnit").value;
+let size=document.getElementById("conduitSize").value;
+let data=(unit==="mm")?conduitMM:conduitInch;
+systemArea=data[size];
 
-let percentFill=(totalArea/trayArea)*100;
+// กำหนด % ตามจำนวนสาย
+if(totalCables===1) limitPercent=53;
+else if(totalCables===2) limitPercent=31;
+else if(totalCables>=3) limitPercent=40;
+}
 
-let status=(percentFill<=fillFactor*100)?
+let percentFill=(totalArea/systemArea)*100;
+
+let status=(percentFill<=limitPercent)?
 `<span class="pass">ผ่านมาตรฐาน</span>`:
 `<span class="fail">เกินมาตรฐาน</span>`;
 
 document.getElementById("output").innerHTML=`
+จำนวนสายรวม = ${totalCables} เส้น<br>
 พื้นที่สายรวม = ${totalArea.toFixed(2)} mm²<br>
-พื้นที่ราง = ${trayArea.toFixed(2)} mm²<br>
+พื้นที่ระบบ = ${systemArea.toFixed(2)} mm²<br>
 % การบรรจุจริง = ${percentFill.toFixed(2)} %<br>
-เกณฑ์สูงสุด = ${(fillFactor*100)} %<br>
-${status}
-`;
+เกณฑ์สูงสุด = ${limitPercent} %<br>
+${status}`;
 }
 
 </script>

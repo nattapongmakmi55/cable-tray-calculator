@@ -3,23 +3,79 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Conduit Calculator</title>
+<title>Professional Conduit & Cable Tray Calculator</title>
 <style>
-body{font-family:Arial;margin:40px;background:#f4f6f9}
-.card{background:#fff;padding:25px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.1);max-width:500px;margin:auto}
-label{font-weight:bold}
-select,input{width:100%;padding:8px;margin:8px 0 15px;border-radius:6px;border:1px solid #ccc}
-button{padding:10px 15px;border:none;border-radius:8px;background:#0070f3;color:white;font-size:16px;cursor:pointer}
-button:hover{background:#0059c9}
-.result{margin-top:20px;padding:15px;background:#eef3ff;border-radius:8px}
+body{font-family:Arial;background:#0f172a;color:white;padding:20px;}
+.box{max-width:900px;margin:auto;background:#1e293b;padding:20px;border-radius:12px;}
+input,select,button{padding:6px;margin:4px;border-radius:6px;border:none;}
+button{background:#22c55e;color:white;font-weight:bold;cursor:pointer;}
+button:hover{background:#16a34a;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid #475569;padding:6px;text-align:center;}
+.result{margin-top:15px;background:#334155;padding:10px;border-radius:8px;}
+.pass{color:#22c55e;font-weight:bold;}
+.fail{color:#ef4444;font-weight:bold;}
 </style>
 </head>
 <body>
-<div class="card">
-<h2>คำนวณขนาดท่อร้อยสาย</h2>
 
-<label>เลือกขนาดสาย (sq.mm)</label>
-<select id="cableSize">
+<div class="box">
+<h2>คำนวณท่อ & รางเคเบิล (Professional)</h2>
+
+<label>ประเภทระบบ</label>
+<select id="systemType">
+<option value="conduit">ท่อร้อยสาย (40%)</option>
+<option value="tray">รางปิด (40%)</option>
+<option value="ladder">รางบันได (50%)</option>
+</select>
+
+<label>ชนิดสาย</label>
+<select id="cableType">
+<option value="THW">THW</option>
+<option value="NYY">NYY</option>
+<option value="XLPE">XLPE</option>
+</select>
+
+<h3>รายการสาย</h3>
+<table id="cableTable">
+<tr><th>ขนาด (mm²)</th><th>จำนวนเส้น</th><th>ลบ</th></tr>
+</table>
+
+<button onclick="addRow()">เพิ่มสาย</button>
+
+<hr>
+
+<label>ความกว้างราง (mm)</label>
+<select id="trayWidth">
+<option value="100">100</option>
+<option value="150">150</option>
+<option value="200">200</option>
+<option value="300">300</option>
+<option value="400">400</option>
+</select>
+
+<label>ความสูงราง (mm)</label>
+<input type="number" id="trayHeight" value="50">
+
+<button onclick="calculate()">คำนวณ</button>
+
+<div class="result" id="output"></div>
+
+</div>
+
+<script>
+
+// พื้นที่สายโดยประมาณ (mm2) แยกตามชนิดสาย
+const cableData = {
+THW:{1.5:8,2.5:11,4:16,6:22,10:35,16:50,25:80,35:110,50:140},
+NYY:{1.5:10,2.5:14,4:20,6:28,10:45,16:65,25:100,35:140,50:180},
+XLPE:{1.5:9,2.5:13,4:18,6:25,10:40,16:58,25:90,35:125,50:165}
+};
+
+function createSizeDropdown(){
+return `
+<select>
+<option value="1.5">1.5</option>
 <option value="2.5">2.5</option>
 <option value="4">4</option>
 <option value="6">6</option>
@@ -28,53 +84,62 @@ button:hover{background:#0059c9}
 <option value="25">25</option>
 <option value="35">35</option>
 <option value="50">50</option>
-<option value="70">70</option>
-<option value="95">95</option>
-<option value="120">120</option>
-<option value="150">150</option>
-<option value="185">185</option>
-<option value="240">240</option>
 </select>
+`;
+}
 
-<label>จำนวนเส้น</label>
-<input type="number" id="qty" value="3">
+function addRow(){
+let table=document.getElementById("cableTable");
+let row=table.insertRow();
+row.innerHTML=`
+<td>${createSizeDropdown()}</td>
+<td><input type="number" placeholder="จำนวน"></td>
+<td><button onclick="this.parentElement.parentElement.remove()">X</button></td>
+`;
+}
 
-<button onclick="calculate()">คำนวณ</button>
-
-<div class="result" id="result"></div>
-</div>
-
-<script>
-// เส้นผ่านศูนย์กลางสายโดยประมาณ (mm)
-const cableDiameter = {
-2.5:3.6,4:4.1,6:4.8,10:6.1,16:7.6,25:9.4,35:10.9,
-50:12.8,70:14.8,95:17.2,120:19.0,150:21.0,185:23.5,240:26.5
-};
+addRow();
 
 function calculate(){
-const size=document.getElementById("cableSize").value;
-const qty=parseInt(document.getElementById("qty").value);
 
-const diameter=cableDiameter[size];
-const areaOne=Math.PI*Math.pow(diameter/2,2);
-const totalArea=areaOne*qty;
-const conduitArea=totalArea/0.4; // 40% fill
-const conduitDiameter=Math.sqrt((conduitArea*4)/Math.PI);
+let type=document.getElementById("systemType").value;
+let cableType=document.getElementById("cableType").value;
+let rows=document.getElementById("cableTable").rows;
 
-let recommended="";
-if(conduitDiameter<=16) recommended="1/2 นิ้ว";
-else if(conduitDiameter<=20) recommended="3/4 นิ้ว";
-else if(conduitDiameter<=26) recommended="1 นิ้ว";
-else if(conduitDiameter<=32) recommended="1 1/4 นิ้ว";
-else if(conduitDiameter<=40) recommended="1 1/2 นิ้ว";
-else recommended="2 นิ้ว หรือใหญ่กว่า";
+let totalArea=0;
 
+for(let i=1;i<rows.length;i++){
+let size=rows[i].cells[0].children[0].value;
+let qty=rows[i].cells[1].children[0].value;
 
-document.getElementById("result").innerHTML=
-`ขนาดสาย: ${size} sq.mm<br>
-จำนวน: ${qty} เส้น<br><br>
-👉 ขนาดท่อที่แนะนำ: <b>${recommended}</b>`;
+if(cableData[cableType][size] && qty>0){
+totalArea+=cableData[cableType][size]*qty;
 }
+}
+
+let fillFactor=(type==="ladder")?0.50:0.40;
+
+let width=parseFloat(document.getElementById("trayWidth").value);
+let height=parseFloat(document.getElementById("trayHeight").value);
+
+let trayArea=width*height;
+
+let percentFill=(totalArea/trayArea)*100;
+
+let status=(percentFill<=fillFactor*100)?
+`<span class="pass">ผ่านมาตรฐาน</span>`:
+`<span class="fail">เกินมาตรฐาน</span>`;
+
+document.getElementById("output").innerHTML=`
+พื้นที่สายรวม = ${totalArea.toFixed(2)} mm²<br>
+พื้นที่ราง = ${trayArea.toFixed(2)} mm²<br>
+% การบรรจุจริง = ${percentFill.toFixed(2)} %<br>
+เกณฑ์สูงสุด = ${(fillFactor*100)} %<br>
+${status}
+`;
+}
+
 </script>
+
 </body>
 </html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Professional Conduit & Cable Tray Calculator</title>
+<style>
+body{font-family:Arial;background:#0f172a;color:white;padding:20px;}
+.box{max-width:900px;margin:auto;background:#1e293b;padding:20px;border-radius:12px;}
+input,select,button{padding:6px;margin:4px;border-radius:6px;border:none;}
+button{background:#22c55e;color:white;font-weight:bold;cursor:pointer;}
+button:hover{background:#16a34a;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid #475569;padding:6px;text-align:center;}
+.result{margin-top:15px;background:#334155;padding:10px;border-radius:8px;}
+.pass{color:#22c55e;font-weight:bold;}
+.fail{color:#ef4444;font-weight:bold;}
+</style>
+</head>
+<body>
+
+<div class="box">
+<h2>คำนวณท่อ & รางเคเบิล (Professional)</h2>
+
+<label>ประเภทระบบ</label>
+<select id="systemType">
+<option value="conduit">ท่อร้อยสาย (40%)</option>
+<option value="tray">รางปิด (40%)</option>
+<option value="ladder">รางบันได (50%)</option>
+</select>
+
+<label>ชนิดสาย</label>
+<select id="cableType">
+<option value="THW">THW</option>
+<option value="NYY">NYY</option>
+<option value="XLPE">XLPE</option>
+</select>
+
+<h3>รายการสาย</h3>
+<table id="cableTable">
+<tr><th>ขนาด (mm²)</th><th>จำนวนเส้น</th><th>ลบ</th></tr>
+</table>
+
+<button onclick="addRow()">เพิ่มสาย</button>
+
+<hr>
+
+<label>ความกว้างราง (mm)</label>
+<select id="trayWidth">
+<option value="100">100</option>
+<option value="150">150</option>
+<option value="200">200</option>
+<option value="300">300</option>
+<option value="400">400</option>
+</select>
+
+<label>ความสูงราง (mm)</label>
+<input type="number" id="trayHeight" value="50">
+
+<button onclick="calculate()">คำนวณ</button>
+
+<div class="result" id="output"></div>
+
+</div>
+
+<script>
+
+// พื้นที่สายโดยประมาณ (mm2) แยกตามชนิดสาย
+const cableData = {
+THW:{1.5:8,2.5:11,4:16,6:22,10:35,16:50,25:80,35:110,50:140},
+NYY:{1.5:10,2.5:14,4:20,6:28,10:45,16:65,25:100,35:140,50:180},
+XLPE:{1.5:9,2.5:13,4:18,6:25,10:40,16:58,25:90,35:125,50:165}
+};
+
+function addRow(){
+let table=document.getElementById("cableTable");
+let row=table.insertRow();
+row.innerHTML=`
+<td><input type="number" placeholder="เช่น 4"></td>
+<td><input type="number" placeholder="จำนวน"></td>
+<td><button onclick="this.parentElement.parentElement.remove()">X</button></td>
+`;
+}
+
+addRow();
+
+function calculate(){
+
+let type=document.getElementById("systemType").value;
+let cableType=document.getElementById("cableType").value;
+let rows=document.getElementById("cableTable").rows;
+
+let totalArea=0;
+
+for(let i=1;i<rows.length;i++){
+let size=rows[i].cells[0].children[0].value;
+let qty=rows[i].cells[1].children[0].value;
+
+if(cableData[cableType][size]){
+totalArea+=cableData[cableType][size]*qty;
+}
+}
+
+let fillFactor=(type==="ladder")?0.50:0.40;
+
+let width=parseFloat(document.getElementById("trayWidth").value);
+let height=parseFloat(document.getElementById("trayHeight").value);
+
+let trayArea=width*height;
+
+let percentFill=(totalArea/trayArea)*100;
+
+let status=(percentFill<=fillFactor*100)?
+`<span class="pass">ผ่านมาตรฐาน</span>`:
+`<span class="fail">เกินมาตรฐาน</span>`;
+
+document.getElementById("output").innerHTML=`
+พื้นที่สายรวม = ${totalArea.toFixed(2)} mm²<br>
+พื้นที่ราง = ${trayArea.toFixed(2)} mm²<br>
+% การบรรจุจริง = ${percentFill.toFixed(2)} %<br>
+เกณฑ์สูงสุด = ${(fillFactor*100)} %<br>
+${status}
+`;
+}
+
+</script>
+
+</body>
+</html>

@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Conduit & Cable Tray Calculator</title>
+<title>Conduit Calculator</title>
 <style>
 body{font-family:Arial;margin:40px;background:#f4f6f9}
-.card{background:#fff;padding:25px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.1);max-width:650px;margin:auto}
-h2{margin-top:0}
+.card{background:#fff;padding:25px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.1);max-width:500px;margin:auto}
 label{font-weight:bold}
 select,input{width:100%;padding:8px;margin:8px 0 15px;border-radius:6px;border:1px solid #ccc}
 button{padding:10px 15px;border:none;border-radius:8px;background:#0070f3;color:white;font-size:16px;cursor:pointer}
@@ -17,14 +16,7 @@ button:hover{background:#0059c9}
 </head>
 <body>
 <div class="card">
-<h2>โปรแกรมคำนวณท่อร้อยสาย</h2>
-
-<label>เลือกชนิดสาย</label>
-<select id="cableType">
-<option value="THW">THW</option>
-<option value="NYY">NYY</option>
-<option value="XLPE">XLPE</option>
-</select>
+<h2>คำนวณขนาดท่อร้อยสาย</h2>
 
 <label>เลือกขนาดสาย (sq.mm)</label>
 <select id="cableSize">
@@ -53,25 +45,21 @@ button:hover{background:#0059c9}
 </div>
 
 <script>
-// เส้นผ่านศูนย์กลางโดยประมาณ (mm) ของสายแต่ละชนิด
-const cableData = {
-THW: {2.5:3.6,4:4.1,6:4.8,10:6.1,16:7.6,25:9.4,35:10.9,50:12.8,70:14.8,95:17.2,120:19.0,150:21.0,185:23.5,240:26.5},
-NYY: {2.5:8,4:9,6:10,10:12,16:14,25:17,35:19,50:22,70:25,95:28,120:30,150:33,185:36,240:40},
-XLPE:{2.5:7,4:8,6:9,10:11,16:13,25:16,35:18,50:21,70:24,95:27,120:29,150:32,185:35,240:39}
+// เส้นผ่านศูนย์กลางสายโดยประมาณ (mm)
+const cableDiameter = {
+2.5:3.6,4:4.1,6:4.8,10:6.1,16:7.6,25:9.4,35:10.9,
+50:12.8,70:14.8,95:17.2,120:19.0,150:21.0,185:23.5,240:26.5
 };
 
 function calculate(){
-const type=document.getElementById("cableType").value;
 const size=document.getElementById("cableSize").value;
 const qty=parseInt(document.getElementById("qty").value);
 
-const diameter=cableData[type][size];
+const diameter=cableDiameter[size];
 const areaOne=Math.PI*Math.pow(diameter/2,2);
 const totalArea=areaOne*qty;
 const conduitArea=totalArea/0.4; // 40% fill
 const conduitDiameter=Math.sqrt((conduitArea*4)/Math.PI);
-
-const percentFill=(totalArea/(Math.PI*Math.pow(conduitDiameter/2,2)))*100;
 
 let recommended="";
 if(conduitDiameter<=16) recommended="1/2 นิ้ว";
@@ -83,9 +71,8 @@ else recommended="2 นิ้ว หรือใหญ่กว่า";
 
 
 document.getElementById("result").innerHTML=
-`เส้นผ่านศูนย์กลางสาย: ${diameter.toFixed(1)} mm<br>
-พื้นที่รวมสาย: ${totalArea.toFixed(2)} mm²<br>
-% การบรรจุจริง: ${percentFill.toFixed(1)} %<br><br>
+`ขนาดสาย: ${size} sq.mm<br>
+จำนวน: ${qty} เส้น<br><br>
 👉 ขนาดท่อที่แนะนำ: <b>${recommended}</b>`;
 }
 </script>
